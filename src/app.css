@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+/* Font roles — display (industrial grotesk), body (Inter), data (mono) */
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource-variable/inter';
+@import '@fontsource/geist-mono/400.css';
+@import '@fontsource/geist-mono/500.css';
+
+/*
+  MechFlow landing — dark, industrial, machine-panel.
+  Derived from the app's real identity: rust/amber accent on deep slate, zero radius.
+*/
+@theme {
+	--color-ink: oklch(0.141 0.005 285.823); /* deep slate base   #0E0E11 */
+	--color-ink-2: oklch(0.18 0.006 285.9); /* raised surface    */
+	--color-ink-3: oklch(0.225 0.006 286); /* card / line wells  */
+	--color-line: oklch(1 0 0 / 8%); /* hairline rules           */
+	--color-line-strong: oklch(1 0 0 / 16%);
+
+	--color-bone: oklch(0.985 0 0); /* foreground text          */
+	--color-steel: oklch(0.705 0.015 286.067); /* muted text     */
+	--color-steel-dim: oklch(0.5 0.012 286); /* faintest labels  */
+
+	--color-rust: oklch(0.63 0.145 48); /* primary accent  ~#C2480E */
+	--color-rust-bright: oklch(0.705 0.18 52);
+	--color-amber: oklch(0.79 0.16 72); /* signal highlight         */
+	--color-amber-glow: oklch(0.82 0.13 75);
+
+	--font-display: 'Space Grotesk', sans-serif;
+	--font-sans: 'Inter Variable', sans-serif;
+	--font-mono: 'Geist Mono', monospace;
+
+	--radius: 0rem;
+}
+
+@layer base {
+	* {
+		border-color: var(--color-line);
+	}
+	html {
+		font-family: var(--font-sans);
+		background-color: var(--color-ink);
+		color: var(--color-bone);
+		-webkit-font-smoothing: antialiased;
+		scroll-behavior: smooth;
+	}
+	body {
+		background-color: var(--color-ink);
+		color: var(--color-bone);
+		overflow-x: hidden;
+	}
+	::selection {
+		background: var(--color-rust);
+		color: var(--color-bone);
+	}
+	h1,
+	h2,
+	h3,
+	h4 {
+		font-family: var(--font-display);
+		font-weight: 600;
+		letter-spacing: -0.02em;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
+}
