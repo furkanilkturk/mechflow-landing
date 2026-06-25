@@ -125,6 +125,7 @@
 		{#each features as feature (feature.properties?.NAME)}
 			{@const customer = customerOf(feature)}
 			{@const isHovered = customer && hovered === isoOf(feature)}
+			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<path
 				d={pathGenerator(feature as unknown as GeoPermissibleObjects)}
 				stroke-width="0.3"

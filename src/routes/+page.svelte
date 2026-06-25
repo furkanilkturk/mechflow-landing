@@ -388,6 +388,17 @@
 		</div>
 	</section>
 
+	<!-- stage pipeline — the lifecycle the product encodes -->
+	<section id="flow" class="border-t border-line">
+		<div class="mx-auto max-w-7xl px-6 py-16 sm:py-20">
+			<div use:reveal={{ onView: true }} class="mb-10 flex items-baseline justify-between gap-4">
+				<h2 class="text-2xl sm:text-3xl">The lifecycle, end to end</h2>
+				<span class="font-mono text-[11px] tracking-wider text-steel-dim">FIG.01 — MACHINE FLOW</span>
+			</div>
+			<FlowLine {stages} />
+		</div>
+	</section>
+
 	<!-- complete platform: every module -->
 	<section class="border-t border-line">
 		<div class="mx-auto max-w-7xl px-6 py-20 sm:py-28">
@@ -493,17 +504,6 @@
 					</span>
 				</figcaption>
 			</figure>
-		</div>
-	</section>
-
-	<!-- stage pipeline — the lifecycle the product encodes -->
-	<section id="flow" class="border-t border-line">
-		<div class="mx-auto max-w-7xl px-6 py-16 sm:py-20">
-			<div use:reveal={{ onView: true }} class="mb-10 flex items-baseline justify-between gap-4">
-				<h2 class="text-2xl sm:text-3xl">The lifecycle, end to end</h2>
-				<span class="font-mono text-[11px] tracking-wider text-steel-dim">FIG.01 — MACHINE FLOW</span>
-			</div>
-			<FlowLine {stages} />
 		</div>
 	</section>
 
