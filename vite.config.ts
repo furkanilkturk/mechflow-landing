@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-vercel';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
@@ -13,7 +13,8 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			// Static marketing site — prerender everything to plain HTML/CSS/JS.
+			// Vercel deploy — every route is prerendered (see +layout.ts), so this
+			// ships as static prerendered output with no serverless functions.
 			adapter: adapter()
 		})
 	]
