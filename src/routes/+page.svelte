@@ -413,7 +413,7 @@
 			<!-- roles & permissions -->
 			<div
 				use:reveal={{ onView: true, y: 24 }}
-				class="mt-px grid gap-px border border-line bg-line lg:grid-cols-[1fr_1.2fr]"
+				class="mt-6 grid gap-px border border-line bg-line sm:mt-8 lg:grid-cols-[1fr_1.2fr]"
 			>
 				<div class="bg-ink p-8">
 					<span class="font-mono text-[11px] tracking-wider text-amber">ROLES & ACCESS</span>
