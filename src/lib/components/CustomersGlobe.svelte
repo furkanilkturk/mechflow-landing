@@ -22,6 +22,7 @@
 		MA: { name: 'Morocco', customers: 2, machines: 18 }
 	};
 
+	let container: HTMLDivElement;
 	let features = $state<Feature[]>([]);
 	let box = $state(450);
 	let hovered = $state<string | null>(null);
@@ -83,26 +84,71 @@
 			.catch(() => {});
 
 		const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-		let frame: number;
-		const animate = () => {
-			if (!dragging && !hovered && !reduce) {
-				const c = rotation.current as number[];
-				void rotation.set([c[0] + 0.12, c[1], 0], { instant: true });
+
+		// Re-projecting ~180 country paths every frame is the heavy part, so cap
+		// the loop to 30fps and advance rotation by elapsed time to keep the spin
+		// speed stable regardless of frame rate.
+		const minFrameMs = 1000 / 30;
+		const degPerMs = 0.12 / (1000 / 60); // original feel: 0.12°/frame @60fps
+		let frame = 0;
+		let running = false;
+		let last = 0;
+
+		const animate = (now: number) => {
+			if (now - last >= minFrameMs) {
+				if (!dragging && !hovered && !reduce) {
+					const c = rotation.current as number[];
+					void rotation.set([c[0] + degPerMs * (now - last), c[1], 0], { instant: true });
+				}
+				last = now;
 			}
 			frame = requestAnimationFrame(animate);
 		};
-		frame = requestAnimationFrame(animate);
+
+		const play = () => {
+			if (running || reduce) return;
+			running = true;
+			last = performance.now();
+			frame = requestAnimationFrame(animate);
+		};
+		const pause = () => {
+			running = false;
+			cancelAnimationFrame(frame);
+			frame = 0;
+		};
+
+		// Spin only while visible on screen and the tab is in the foreground.
+		let onScreen = false;
+		const sync = () => {
+			if (onScreen && !document.hidden) play();
+			else pause();
+		};
+		const io = new IntersectionObserver(
+			([entry]) => {
+				onScreen = !!entry?.isIntersecting;
+				sync();
+			},
+			{ threshold: 0 }
+		);
+		io.observe(container);
+		document.addEventListener('visibilitychange', sync);
 
 		return () => {
 			cancelled = true;
-			cancelAnimationFrame(frame);
+			pause();
+			io.disconnect();
+			document.removeEventListener('visibilitychange', sync);
 		};
 	});
 
 	const hoveredData = $derived(hovered ? CUSTOMERS[hovered] : null);
 </script>
 
-<div class="relative mx-auto aspect-square w-full max-w-[520px]" bind:clientWidth={box}>
+<div
+	class="relative mx-auto aspect-square w-full max-w-[520px]"
+	bind:this={container}
+	bind:clientWidth={box}
+>
 	<!-- glow -->
 	<div class="pointer-events-none absolute inset-0 grid place-items-center">
 		<div class="h-2/3 w-2/3 rounded-full bg-rust/15 blur-[90px]"></div>

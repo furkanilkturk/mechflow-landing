@@ -103,7 +103,9 @@
 		const uRes = gl.getUniformLocation(program, 'u_res');
 		const uTime = gl.getUniformLocation(program, 'u_time');
 
-		const dpr = Math.min(window.devicePixelRatio || 1, 2);
+		// A slow, blurry noise field doesn't need full retina density — capping
+		// the buffer resolution is the single biggest GPU saving on weak devices.
+		const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 		function resize() {
 			const w = canvas.clientWidth * dpr;
 			const h = canvas.clientHeight * dpr;
@@ -117,23 +119,71 @@
 		const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		let raf = 0;
 		let start = performance.now();
+		let running = false;
 
-		function frame(now: number) {
+		// The field drifts very slowly (u_time * 0.06), so 30fps is visually
+		// identical to 60 while halving the per-frame GPU cost.
+		const minFrameMs = 1000 / 30;
+		let lastDraw = 0;
+
+		function draw(now: number) {
 			resize();
 			gl!.uniform2f(uRes, canvas.width, canvas.height);
 			gl!.uniform1f(uTime, (now - start) / 1000);
 			gl!.drawArrays(gl!.TRIANGLES, 0, 3);
-			if (!reduce) raf = requestAnimationFrame(frame);
 		}
 
+		function frame(now: number) {
+			if (now - lastDraw >= minFrameMs) {
+				lastDraw = now;
+				draw(now);
+			}
+			raf = requestAnimationFrame(frame);
+		}
+
+		function play() {
+			if (running || reduce) return;
+			running = true;
+			lastDraw = 0;
+			raf = requestAnimationFrame(frame);
+		}
+		function pause() {
+			running = false;
+			cancelAnimationFrame(raf);
+			raf = 0;
+		}
+
+		// Only render while the canvas is actually on screen and the tab is visible.
+		let onScreen = false;
+		const sync = () => {
+			if (onScreen && !document.hidden) play();
+			else pause();
+		};
+
+		const io = new IntersectionObserver(
+			([entry]) => {
+				onScreen = !!entry?.isIntersecting;
+				sync();
+			},
+			{ threshold: 0 }
+		);
+		io.observe(canvas);
+
+		document.addEventListener('visibilitychange', sync);
+
 		const onResize = () => {
-			if (reduce) frame(performance.now());
+			// keep a correct frame up even when the loop is paused (reduced motion)
+			if (!running) draw(performance.now());
 		};
 		window.addEventListener('resize', onResize);
-		frame(performance.now());
+
+		// paint one frame immediately so there's never an empty canvas
+		draw(performance.now());
 
 		return () => {
-			cancelAnimationFrame(raf);
+			pause();
+			io.disconnect();
+			document.removeEventListener('visibilitychange', sync);
 			window.removeEventListener('resize', onResize);
 		};
 	});

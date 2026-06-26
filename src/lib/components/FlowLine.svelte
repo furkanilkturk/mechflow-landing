@@ -74,7 +74,6 @@
 		stroke-width: 1.5;
 		stroke-dasharray: var(--rail);
 		stroke-dashoffset: var(--rail);
-		vector-effect: non-scaling-stroke;
 	}
 	.started .rail-draw {
 		transition: stroke-dashoffset 1.1s cubic-bezier(0.16, 1, 0.3, 1);
@@ -87,7 +86,6 @@
 		stroke-dasharray: 22 9999;
 		stroke-dashoffset: 0;
 		opacity: 0;
-		vector-effect: non-scaling-stroke;
 		filter: drop-shadow(0 0 6px var(--color-rust));
 	}
 	.started .rail-pulse {
