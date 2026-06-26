@@ -2,6 +2,14 @@
 	import { onMount } from 'svelte';
 	import { Spring } from 'svelte/motion';
 	import { geoOrthographic, geoPath, geoGraticule, type GeoPermissibleObjects } from 'd3-geo';
+	import { theme } from '$lib/theme.svelte';
+
+	// Ocean + non-customer landmass colours follow the active theme.
+	const palette = $derived(
+		theme.value === 'light'
+			? { ocean: '#e9e9ec', land: '#d6d6da', landStroke: '#c4c4ca' }
+			: { ocean: '#0b0b0f', land: '#212126', landStroke: '#2c2c32' }
+	);
 
 	type Customer = { name: string; customers: number; machines: number };
 	type Feature = { properties: Record<string, string>; type: string; geometry: unknown };
@@ -164,7 +172,12 @@
 		onpointerleave={() => (hovered = null)}
 	>
 		<!-- ocean sphere -->
-		<path d={pathGenerator({ type: 'Sphere' })} class="fill-[#0b0b0f] stroke-line" stroke-width="0.5" />
+		<path
+			d={pathGenerator({ type: 'Sphere' })}
+			class="stroke-line"
+			fill={palette.ocean}
+			stroke-width="0.5"
+		/>
 		<!-- graticule -->
 		<path d={pathGenerator(graticule())} class="fill-none stroke-line" stroke-width="0.3" />
 
@@ -175,11 +188,13 @@
 			<path
 				d={pathGenerator(feature as unknown as GeoPermissibleObjects)}
 				stroke-width="0.3"
+				fill={customer ? undefined : palette.land}
+				stroke={customer ? undefined : palette.landStroke}
 				class="transition-colors duration-150 {customer
 					? isHovered
 						? 'cursor-pointer fill-rust-bright stroke-amber'
 						: 'cursor-pointer fill-rust/70 stroke-rust'
-					: 'pointer-events-none fill-[#212126] stroke-[#2c2c32]'}"
+					: 'pointer-events-none'}"
 				role={customer ? 'button' : 'presentation'}
 				tabindex={customer ? 0 : -1}
 				aria-label={feature.properties?.NAME}

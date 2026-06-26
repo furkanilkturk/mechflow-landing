@@ -135,6 +135,14 @@
 		}
 	}
 
+	/* Light theme — bump the rail contrast so it doesn't wash out on white. */
+	:global(:root[data-theme='light']) .rail-base {
+		stroke: oklch(0 0 0 / 20%);
+	}
+	:global(:root[data-theme='light']) .rail-draw {
+		stroke: oklch(0.48 0.03 45);
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.started .rail-draw {
 			transition: none;

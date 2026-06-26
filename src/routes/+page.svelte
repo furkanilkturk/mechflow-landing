@@ -5,6 +5,7 @@
 	import CustomersGlobe from '$lib/components/CustomersGlobe.svelte';
 	import FlowLine from '$lib/components/FlowLine.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { theme } from '$lib/theme.svelte';
 	import { reveal } from '$lib/actions/reveal';
 	import { generateSampleReport } from '$lib/utils/sample-report';
 	import { m } from '$lib/paraglide/messages';
@@ -227,7 +228,7 @@
 <div class="relative">
 	<!-- sticky nav — follows down the whole page -->
 	<header
-		class:surface-dark={!scrolled && !menuOpen}
+		class:surface-dark={!scrolled && !menuOpen && theme.value === 'dark'}
 		class="fixed inset-x-0 top-0 z-50 border-b transition-colors duration-300 {scrolled || menuOpen
 			? 'border-line bg-ink/80 backdrop-blur-md'
 			: 'border-transparent bg-transparent'}"
@@ -303,8 +304,8 @@
 		{/if}
 	</header>
 
-	<!-- HERO — full-bleed thermal shader background (stays dark in both themes) -->
-	<section id="top" class="surface-dark relative isolate overflow-hidden">
+	<!-- HERO — full-bleed thermal shader background (follows the theme) -->
+	<section id="top" class="relative isolate overflow-hidden">
 		<!-- shader -->
 		<ThermalShader class="absolute inset-0 -z-30 h-full w-full" />
 
@@ -561,8 +562,8 @@
 		</div>
 	</section>
 
-	<!-- CTA — thermal shader echo (stays dark in both themes) -->
-	<section id="demo" class="surface-dark relative isolate scroll-mt-20 overflow-hidden border-t border-line">
+	<!-- CTA — thermal shader echo (follows the theme) -->
+	<section id="demo" class="relative isolate scroll-mt-20 overflow-hidden border-t border-line">
 		<ThermalShader class="absolute inset-0 -z-30 h-full w-full" />
 		<div class="pointer-events-none absolute inset-0 -z-10 bg-ink/70"></div>
 		<div class="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-ink via-transparent to-ink"></div>

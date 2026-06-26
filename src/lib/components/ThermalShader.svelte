@@ -1,9 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { theme } from '$lib/theme.svelte';
 
 	let { class: className = '' }: { class?: string } = $props();
 
 	let canvas: HTMLCanvasElement;
+	// Set inside onMount; lets a theme change repaint even when the loop is idle.
+	let repaint: (() => void) | null = null;
+	$effect(() => {
+		theme.value; // re-run on theme switch
+		repaint?.();
+	});
 
 	const VERT = `
 		attribute vec2 a_pos;
@@ -15,6 +22,7 @@
 		precision highp float;
 		uniform vec2 u_res;
 		uniform float u_time;
+		uniform float u_light; // 0 = dark theme, 1 = light theme
 
 		float hash(vec2 p){
 			p = fract(p * vec2(123.34, 456.21));
@@ -47,21 +55,23 @@
 			              fbm(p + 1.6 * q + vec2(8.3, 2.8) - 0.12 * t));
 			float n = fbm(p + 2.0 * r);
 
-			// brand palette
-			vec3 ink   = vec3(0.050, 0.050, 0.060);
-			vec3 steel = vec3(0.150, 0.160, 0.190);
-			vec3 rust  = vec3(0.760, 0.300, 0.100);
-			vec3 amber = vec3(0.960, 0.640, 0.190);
+			// brand palette — base/steel flip light when u_light = 1, accents stay warm
+			vec3 base  = mix(vec3(0.050, 0.050, 0.060), vec3(0.945, 0.945, 0.955), u_light);
+			vec3 steel = mix(vec3(0.150, 0.160, 0.190), vec3(0.855, 0.860, 0.885), u_light);
+			vec3 rust  = mix(vec3(0.760, 0.300, 0.100), vec3(0.820, 0.380, 0.150), u_light);
+			vec3 amber = mix(vec3(0.960, 0.640, 0.190), vec3(0.930, 0.660, 0.270), u_light);
 
-			vec3 col = ink;
+			vec3 col = base;
 			col = mix(col, steel, smoothstep(0.15, 0.65, n));
 			col = mix(col, rust,  smoothstep(0.45, 0.92, n) * 0.95);
 			float heat = pow(smoothstep(0.62, 0.98, length(r)), 1.6);
 			col = mix(col, amber, heat * 0.85);
 
-			// vignette toward the panel edges
+			// vignette — dark theme darkens the edges, light theme fades them to base
 			float vig = smoothstep(1.15, 0.25, length(uv - 0.5));
-			col *= 0.45 + 0.55 * vig;
+			vec3 darkVig  = col * (0.45 + 0.55 * vig);
+			vec3 lightVig = mix(base, col, 0.30 + 0.70 * vig);
+			col = mix(darkVig, lightVig, u_light);
 
 			// fine grain to keep it from banding / feeling plastic
 			float g = hash(gl_FragCoord.xy + u_time) * 0.05 - 0.025;
@@ -102,6 +112,7 @@
 
 		const uRes = gl.getUniformLocation(program, 'u_res');
 		const uTime = gl.getUniformLocation(program, 'u_time');
+		const uLight = gl.getUniformLocation(program, 'u_light');
 
 		// A slow, blurry noise field doesn't need full retina density — capping
 		// the buffer resolution is the single biggest GPU saving on weak devices.
@@ -130,8 +141,12 @@
 			resize();
 			gl!.uniform2f(uRes, canvas.width, canvas.height);
 			gl!.uniform1f(uTime, (now - start) / 1000);
+			gl!.uniform1f(uLight, theme.value === 'light' ? 1 : 0);
 			gl!.drawArrays(gl!.TRIANGLES, 0, 3);
 		}
+
+		// Let an external theme change trigger an immediate repaint.
+		repaint = () => draw(performance.now());
 
 		function frame(now: number) {
 			if (now - lastDraw >= minFrameMs) {
@@ -181,6 +196,7 @@
 		draw(performance.now());
 
 		return () => {
+			repaint = null;
 			pause();
 			io.disconnect();
 			document.removeEventListener('visibilitychange', sync);
