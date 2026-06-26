@@ -65,48 +65,60 @@
 	import BuildingSkyscraperIcon from '@tabler/icons-svelte/icons/building-skyscraper';
 
 	// Machine lifecycle — same icons + colours as the MechFlow app's status badges.
-	// Derived so every label re-resolves when the locale switches.
+	// Derived so labels re-resolve on locale switch and the node tints deepen
+	// in light mode (the dark /10 fills wash out on a white surface).
 	const stages = $derived.by(() => {
 		void locale;
+		const light = theme.value === 'light';
 		return [
 		{
 			code: 'ORD',
 			label: m.stage_ord(),
 			icon: ClipboardIcon,
-			boxClass: 'border-blue-400/30 bg-blue-400/10 text-blue-400',
-			codeClass: 'text-blue-400',
+			boxClass: light
+				? 'border-blue-500/55 bg-blue-500/15 text-blue-600'
+				: 'border-blue-400/30 bg-blue-400/10 text-blue-400',
+			codeClass: light ? 'text-blue-600' : 'text-blue-400',
 			pulse: 'var(--color-blue-400)'
 		},
 		{
 			code: 'ASM',
 			label: m.stage_asm(),
 			icon: SettingsIcon,
-			boxClass: 'border-amber-400/30 bg-amber-400/10 text-amber-400',
-			codeClass: 'text-amber-400',
+			boxClass: light
+				? 'border-amber-500/55 bg-amber-500/15 text-amber-600'
+				: 'border-amber-400/30 bg-amber-400/10 text-amber-400',
+			codeClass: light ? 'text-amber-600' : 'text-amber-400',
 			pulse: 'var(--color-amber-400)'
 		},
 		{
 			code: 'TST',
 			label: m.stage_tst(),
 			icon: ToolIcon,
-			boxClass: 'border-purple-400/30 bg-purple-400/10 text-purple-400',
-			codeClass: 'text-purple-400',
+			boxClass: light
+				? 'border-purple-500/55 bg-purple-500/15 text-purple-600'
+				: 'border-purple-400/30 bg-purple-400/10 text-purple-400',
+			codeClass: light ? 'text-purple-600' : 'text-purple-400',
 			pulse: 'var(--color-purple-400)'
 		},
 		{
 			code: 'SHP',
 			label: m.stage_shp(),
 			icon: TruckIcon,
-			boxClass: 'border-indigo-400/30 bg-indigo-400/10 text-indigo-400',
-			codeClass: 'text-indigo-400',
+			boxClass: light
+				? 'border-indigo-500/55 bg-indigo-500/15 text-indigo-600'
+				: 'border-indigo-400/30 bg-indigo-400/10 text-indigo-400',
+			codeClass: light ? 'text-indigo-600' : 'text-indigo-400',
 			pulse: 'var(--color-indigo-400)'
 		},
 		{
 			code: 'INS',
 			label: m.stage_ins(),
 			icon: ClockIcon,
-			boxClass: 'border-teal-400/30 bg-teal-400/10 text-teal-400',
-			codeClass: 'text-teal-400',
+			boxClass: light
+				? 'border-teal-500/55 bg-teal-500/15 text-teal-600'
+				: 'border-teal-400/30 bg-teal-400/10 text-teal-400',
+			codeClass: light ? 'text-teal-600' : 'text-teal-400',
 			pulse: 'var(--color-teal-400)'
 		}
 		];
