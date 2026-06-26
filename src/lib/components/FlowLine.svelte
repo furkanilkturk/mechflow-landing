@@ -105,6 +105,15 @@
 	.node-box {
 		position: relative;
 		transition: transform 0.3s;
+		/* opaque tinted fill (node colour over the page bg) so the connector
+		   line and the travelling pulse vanish behind each box and only show
+		   in the gaps between nodes */
+		background:
+			linear-gradient(
+				color-mix(in oklch, var(--pulse) 12%, transparent),
+				color-mix(in oklch, var(--pulse) 12%, transparent)
+			),
+			var(--color-ink);
 	}
 	.node-box::after {
 		content: '';
@@ -135,12 +144,12 @@
 		}
 	}
 
-	/* Light theme — bump the rail contrast so it doesn't wash out on white. */
+	/* Light theme — a soft warm grey rail: visible on white but not heavy. */
 	:global(:root[data-theme='light']) .rail-base {
-		stroke: oklch(0 0 0 / 20%);
+		stroke: oklch(0 0 0 / 12%);
 	}
 	:global(:root[data-theme='light']) .rail-draw {
-		stroke: oklch(0.48 0.03 45);
+		stroke: oklch(0.7 0.02 45);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
