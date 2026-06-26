@@ -1,23 +1,44 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import ThermalShader from '$lib/components/ThermalShader.svelte';
 	import CustomersGlobe from '$lib/components/CustomersGlobe.svelte';
 	import FlowLine from '$lib/components/FlowLine.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { reveal } from '$lib/actions/reveal';
 	import { generateSampleReport } from '$lib/utils/sample-report';
+	import { m } from '$lib/paraglide/messages';
+	import { getLocale, setLocale, locales, baseLocale } from '$lib/paraglide/runtime';
 	import DownloadIcon from '@tabler/icons-svelte/icons/download';
 	import ArrowRightIcon from '@tabler/icons-svelte/icons/arrow-right';
 	import MenuIcon from '@tabler/icons-svelte/icons/menu-2';
 	import XIcon from '@tabler/icons-svelte/icons/x';
 
+	// Active locale. Starts at the prerendered base locale so the first client
+	// render matches the SSR HTML (no hydration mismatch); onMount adopts the
+	// visitor's stored choice. {#key locale} re-renders all copy on switch.
+	let locale = $state(baseLocale);
+	function switchLocale(next: (typeof locales)[number]) {
+		if (next === locale) return;
+		setLocale(next, { reload: false }); // writes localStorage + cookie, no reload
+		locale = next;
+	}
+
 	// Sticky-nav scroll state — bar gains a backdrop once you leave the top.
 	let scrolled = $state(false);
 	let menuOpen = $state(false);
 	onMount(() => {
+		const stored = getLocale();
+		if (stored !== locale) locale = stored;
+
 		const onScroll = () => (scrolled = window.scrollY > 24);
 		onScroll();
 		window.addEventListener('scroll', onScroll, { passive: true });
 		return () => window.removeEventListener('scroll', onScroll);
+	});
+
+	$effect(() => {
+		if (browser) document.documentElement.lang = locale;
 	});
 
 	import ClipboardIcon from '@tabler/icons-svelte/icons/clipboard';
@@ -43,10 +64,13 @@
 	import BuildingSkyscraperIcon from '@tabler/icons-svelte/icons/building-skyscraper';
 
 	// Machine lifecycle — same icons + colours as the MechFlow app's status badges.
-	const stages = [
+	// Derived so every label re-resolves when the locale switches.
+	const stages = $derived.by(() => {
+		void locale;
+		return [
 		{
 			code: 'ORD',
-			label: 'Order Created',
+			label: m.stage_ord(),
 			icon: ClipboardIcon,
 			boxClass: 'border-blue-400/30 bg-blue-400/10 text-blue-400',
 			codeClass: 'text-blue-400',
@@ -54,7 +78,7 @@
 		},
 		{
 			code: 'ASM',
-			label: 'Assembly',
+			label: m.stage_asm(),
 			icon: SettingsIcon,
 			boxClass: 'border-amber-400/30 bg-amber-400/10 text-amber-400',
 			codeClass: 'text-amber-400',
@@ -62,7 +86,7 @@
 		},
 		{
 			code: 'TST',
-			label: 'Testing',
+			label: m.stage_tst(),
 			icon: ToolIcon,
 			boxClass: 'border-purple-400/30 bg-purple-400/10 text-purple-400',
 			codeClass: 'text-purple-400',
@@ -70,7 +94,7 @@
 		},
 		{
 			code: 'SHP',
-			label: 'Ready for Shipment',
+			label: m.stage_shp(),
 			icon: TruckIcon,
 			boxClass: 'border-indigo-400/30 bg-indigo-400/10 text-indigo-400',
 			codeClass: 'text-indigo-400',
@@ -78,83 +102,132 @@
 		},
 		{
 			code: 'INS',
-			label: 'Awaiting Installation',
+			label: m.stage_ins(),
 			icon: ClockIcon,
 			boxClass: 'border-teal-400/30 bg-teal-400/10 text-teal-400',
 			codeClass: 'text-teal-400',
 			pulse: 'var(--color-teal-400)'
 		}
-	];
+		];
+	});
 
 	// The full platform surface — one card per real app module.
-	const modules = [
-		{ icon: DashboardIcon, title: 'Dashboard', body: 'Your whole operation at a glance.' },
-		{ icon: FactoryIcon, title: 'Machines', body: 'Every unit, every stage, full history.' },
-		{ icon: ChartBarIcon, title: 'Statistics', body: 'Throughput, durations & bottlenecks.' },
-		{ icon: ActivityIcon, title: 'Activity', body: 'A full audit trail of every change.' },
-		{ icon: SpeakerphoneIcon, title: 'Announcements', body: 'Broadcast updates to the whole team.' },
-		{ icon: BellIcon, title: 'Notifications', body: 'Alerts the moment they matter.' },
-		{ icon: UsersIcon, title: 'Team', body: 'Roles & permissions for everyone.' },
-		{ icon: BuildingSkyscraperIcon, title: 'Companies', body: 'Your customer & partner directory.' },
-		{ icon: WorldIcon, title: 'Countries', body: 'The live global fleet map.' },
-		{ icon: SettingsIcon, title: 'Settings', body: 'Tune the platform to your plant.' }
-	];
+	const modules = $derived.by(() => {
+		void locale;
+		return [
+		{ icon: DashboardIcon, title: m.mod_dashboard_title(), body: m.mod_dashboard_body() },
+		{ icon: FactoryIcon, title: m.mod_machines_title(), body: m.mod_machines_body() },
+		{ icon: ChartBarIcon, title: m.mod_statistics_title(), body: m.mod_statistics_body() },
+		{ icon: ActivityIcon, title: m.mod_activity_title(), body: m.mod_activity_body() },
+		{ icon: SpeakerphoneIcon, title: m.mod_announcements_title(), body: m.mod_announcements_body() },
+		{ icon: BellIcon, title: m.mod_notifications_title(), body: m.mod_notifications_body() },
+		{ icon: UsersIcon, title: m.mod_team_title(), body: m.mod_team_body() },
+		{ icon: BuildingSkyscraperIcon, title: m.mod_companies_title(), body: m.mod_companies_body() },
+		{ icon: WorldIcon, title: m.mod_countries_title(), body: m.mod_countries_body() },
+		{ icon: SettingsIcon, title: m.mod_settings_title(), body: m.mod_settings_body() }
+		];
+	});
 
-	const roles = [
-		'Administrator',
-		'General Manager',
-		'Plant Manager',
-		'Support Lead',
-		'Site Manager',
-		'Technician',
-		'+ Custom roles'
-	];
+	const roles = $derived.by(() => {
+		void locale;
+		return [
+		{ label: m.role_administrator(), custom: false },
+		{ label: m.role_general_manager(), custom: false },
+		{ label: m.role_plant_manager(), custom: false },
+		{ label: m.role_support_lead(), custom: false },
+		{ label: m.role_site_manager(), custom: false },
+		{ label: m.role_technician(), custom: false },
+		{ label: m.role_custom(), custom: true }
+		];
+	});
 
-	// Benefit-led capabilities — what the customer actually gets.
-	const features = [
+	const perms = $derived.by(() => {
+		void locale;
+		return [
+		m.perm_view_dashboard(),
+		m.perm_manage_machines(),
+		m.perm_view_statistics(),
+		m.perm_manage_team(),
+		m.perm_manage_companies(),
+		m.perm_manage_settings()
+		];
+	});
+
+	// Benefit-led capabilities — `id` stays stable for keys/anchors; the rest is localized.
+	const features = $derived.by(() => {
+		void locale;
+		return [
 		{
-			tag: 'LIVE',
+			id: 'live',
+			tag: m.feat_live_tag(),
 			icon: BoltIcon,
-			title: 'Live, the moment it happens',
-			body: 'Every update from the production floor appears instantly. No refreshing — your whole team sees the same picture in real time.',
+			title: m.feat_live_title(),
+			body: m.feat_live_body(),
 			wide: true
 		},
 		{
-			tag: 'ANYWHERE',
+			id: 'anywhere',
+			tag: m.feat_anywhere_tag(),
 			icon: DevicesIcon,
-			title: 'Mobile, desktop & web',
-			body: 'Phone on the workshop floor, laptop at the office, browser anywhere — the same dashboard, always in sync.'
+			title: m.feat_anywhere_title(),
+			body: m.feat_anywhere_body()
 		},
 		{
-			tag: 'ALERTS',
+			id: 'alerts',
+			tag: m.feat_alerts_tag(),
 			icon: BellIcon,
-			title: 'Push notifications',
-			body: 'Get notified the second a machine needs attention — deadlines, delays and status changes reach you wherever you are.'
+			title: m.feat_alerts_title(),
+			body: m.feat_alerts_body()
 		},
 		{
-			tag: 'FLEET',
+			id: 'fleet',
+			tag: m.feat_fleet_tag(),
 			icon: WorldIcon,
-			title: 'Your whole fleet on the map',
-			body: 'A live world map of every machine, customer and shipment, all at a glance.'
+			title: m.feat_fleet_title(),
+			body: m.feat_fleet_body()
 		},
 		{
-			tag: 'REPORTS',
+			id: 'reports',
+			tag: m.feat_reports_tag(),
 			icon: FileTextIcon,
-			title: 'Reports in one click',
-			body: 'Branded PDF reports for any machine or time period — ready to print or send.'
+			title: m.feat_reports_title(),
+			body: m.feat_reports_body()
 		},
 		{
-			tag: 'LANGUAGES',
+			id: 'languages',
+			tag: m.feat_languages_tag(),
 			icon: LanguageIcon,
-			title: 'English & Turkish',
-			body: 'Switch language instantly, so every team works the way they prefer.'
+			title: m.feat_languages_title(),
+			body: m.feat_languages_body()
 		}
-	];
+		];
+	});
 </script>
 
+<!-- segmented EN/TR control, reused in the nav, mobile menu and footer -->
+{#snippet langSwitch()}
+	<div class="inline-flex border border-line-strong font-mono text-xs">
+		{#each locales as l (l)}
+			<button
+				type="button"
+				onclick={() => switchLocale(l)}
+				class="px-3 py-1.5 uppercase transition-colors {locale === l
+					? 'bg-bone text-ink'
+					: 'text-steel hover:text-bone'}"
+				aria-pressed={locale === l}
+			>
+				{l}
+			</button>
+		{/each}
+	</div>
+{/snippet}
+
+<!-- everything re-renders when the locale changes -->
+{#key locale}
 <div class="relative">
 	<!-- sticky nav — follows down the whole page -->
 	<header
+		class:surface-dark={!scrolled && !menuOpen}
 		class="fixed inset-x-0 top-0 z-50 border-b transition-colors duration-300 {scrolled || menuOpen
 			? 'border-line bg-ink/80 backdrop-blur-md'
 			: 'border-transparent bg-transparent'}"
@@ -167,21 +240,25 @@
 				<span class="font-display text-lg font-semibold tracking-tight">MechFlow</span>
 			</a>
 			<nav class="hidden items-center gap-8 font-mono text-xs tracking-wide text-steel md:flex">
-				<a class="transition-colors hover:text-bone" href="#platform">PLATFORM</a>
-				<a class="transition-colors hover:text-bone" href="#flow">FLOW</a>
-				<a class="transition-colors hover:text-bone" href="#reports">REPORTS</a>
+				<a class="transition-colors hover:text-bone" href="#platform">{m.nav_platform()}</a>
+				<a class="transition-colors hover:text-bone" href="#flow">{m.nav_flow()}</a>
+				<a class="transition-colors hover:text-bone" href="#reports">{m.nav_reports()}</a>
 			</nav>
-			<a
-				href="#demo"
-				class="hidden border border-line-strong px-4 py-2 font-mono text-xs tracking-wide text-bone transition-colors hover:bg-bone hover:text-ink md:inline-block"
-			>
-				REQUEST ACCESS
-			</a>
+			<div class="hidden items-center gap-3 md:flex">
+				{@render langSwitch()}
+				<ThemeToggle />
+				<a
+					href="#demo"
+					class="border border-line-strong px-4 py-2 font-mono text-xs tracking-wide text-bone transition-colors hover:bg-bone hover:text-ink"
+				>
+					{m.request_access()}
+				</a>
+			</div>
 
 			<!-- mobile toggle -->
 			<button
 				class="grid h-9 w-9 place-items-center text-bone md:hidden"
-				aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+				aria-label={menuOpen ? m.menu_close() : m.menu_open()}
 				aria-expanded={menuOpen}
 				onclick={() => (menuOpen = !menuOpen)}
 			>
@@ -200,30 +277,34 @@
 					<a
 						class="border-b border-line py-3.5 font-mono text-sm tracking-wide text-steel transition-colors hover:text-bone"
 						href="#platform"
-						onclick={() => (menuOpen = false)}>PLATFORM</a
+						onclick={() => (menuOpen = false)}>{m.nav_platform()}</a
 					>
 					<a
 						class="border-b border-line py-3.5 font-mono text-sm tracking-wide text-steel transition-colors hover:text-bone"
 						href="#flow"
-						onclick={() => (menuOpen = false)}>FLOW</a
+						onclick={() => (menuOpen = false)}>{m.nav_flow()}</a
 					>
 					<a
 						class="border-b border-line py-3.5 font-mono text-sm tracking-wide text-steel transition-colors hover:text-bone"
 						href="#reports"
-						onclick={() => (menuOpen = false)}>REPORTS</a
+						onclick={() => (menuOpen = false)}>{m.nav_reports()}</a
 					>
 					<a
-						class="mt-3 mb-2 bg-rust px-4 py-3 text-center font-mono text-sm tracking-wide text-bone"
+						class="mt-3 bg-rust px-4 py-3 text-center font-mono text-sm tracking-wide text-bone"
 						href="#demo"
-						onclick={() => (menuOpen = false)}>REQUEST ACCESS</a
+						onclick={() => (menuOpen = false)}>{m.request_access()}</a
 					>
+					<div class="mt-4 mb-2 flex items-center justify-between">
+						{@render langSwitch()}
+						<ThemeToggle />
+					</div>
 				</div>
 			</nav>
 		{/if}
 	</header>
 
-	<!-- HERO — full-bleed thermal shader background -->
-	<section id="top" class="relative isolate overflow-hidden">
+	<!-- HERO — full-bleed thermal shader background (stays dark in both themes) -->
+	<section id="top" class="surface-dark relative isolate overflow-hidden">
 		<!-- shader -->
 		<ThermalShader class="absolute inset-0 -z-30 h-full w-full" />
 
@@ -245,24 +326,22 @@
 				class="mb-7 inline-flex items-center gap-2 border border-line-strong bg-ink/40 px-3 py-1.5 font-mono text-[11px] tracking-wider text-bone/80 backdrop-blur-sm"
 			>
 				<span class="h-1.5 w-1.5 animate-pulse bg-amber"></span>
-				INDUSTRIAL OPERATIONS · REAL-TIME
+				{m.hero_badge()}
 			</div>
 
 			<h1
 				use:reveal={{ delay: 0.08 }}
 				class="max-w-4xl text-balance text-[2.75rem] leading-[1.03] sm:text-6xl sm:leading-[0.98] lg:text-[5.5rem] lg:leading-[0.95]"
 			>
-				Every machine, from order to
-				<span class="text-rust">the factory floor.</span>
+				{m.hero_title()}
+				<span class="text-rust">{m.hero_title_accent()}</span>
 			</h1>
 
 			<p
 				use:reveal={{ delay: 0.18 }}
 				class="mt-8 max-w-xl text-pretty text-lg leading-relaxed text-bone/70"
 			>
-				MechFlow tracks the full lifecycle of industrial machinery — assembly, testing,
-				shipment, installation — across every client site on earth. Type-safe, real-time,
-				built for manufacturers.
+				{m.hero_sub()}
 			</p>
 
 			<div use:reveal={{ delay: 0.28 }} class="mt-10 flex flex-wrap items-center gap-3">
@@ -270,13 +349,13 @@
 					href="#demo"
 					class="bg-rust px-7 py-4 font-mono text-sm tracking-wide text-bone transition-colors hover:bg-rust-bright"
 				>
-					SEE IT LIVE →
+					{m.hero_cta_primary()} →
 				</a>
 				<a
 					href="#flow"
 					class="border border-line-strong bg-ink/40 px-7 py-4 font-mono text-sm tracking-wide text-bone backdrop-blur-sm transition-colors hover:bg-ink"
 				>
-					HOW THE FLOW WORKS
+					{m.hero_cta_secondary()}
 				</a>
 			</div>
 
@@ -289,17 +368,16 @@
 			class="mx-auto grid max-w-7xl items-center gap-12 px-6 py-20 sm:py-28 lg:grid-cols-[1fr_1.1fr]"
 		>
 			<div use:reveal={{ onView: true }}>
-				<span class="font-mono text-[11px] tracking-wider text-rust">GLOBAL FOOTPRINT</span>
+				<span class="font-mono text-[11px] tracking-wider text-rust">{m.fleet_eyebrow()}</span>
 				<h2 class="mt-4 text-3xl leading-tight sm:text-4xl lg:text-5xl">
-					Every customer you've<br class="hidden sm:block" /> sold to, on one globe.
+					{m.fleet_title_a()}<br class="hidden sm:block" /> {m.fleet_title_b()}
 				</h2>
 				<p class="mt-5 max-w-md text-pretty text-base leading-relaxed text-steel">
-					Track not just your machines, but the customers running them — see where every unit
-					lives, spin the globe, and drill into any country at a glance.
+					{m.fleet_body()}
 				</p>
 
 				<dl class="mt-10 grid max-w-md grid-cols-3 gap-px border border-line bg-line">
-					{#each [['COUNTRIES', '12'], ['CUSTOMERS', '54'], ['MACHINES', '915']] as [label, value] (label)}
+					{#each [[m.fleet_stat_countries(), '12'], [m.fleet_stat_customers(), '54'], [m.fleet_stat_machines(), '915']] as [label, value] (value)}
 						<div class="bg-ink px-4 py-4">
 							<dt class="font-mono text-[10px] tracking-wider text-steel-dim">{label}</dt>
 							<dd class="mt-1 font-display text-2xl font-medium text-bone">{value}</dd>
@@ -308,7 +386,7 @@
 				</dl>
 
 				<p class="mt-6 font-mono text-[11px] tracking-wider text-steel-dim">
-					↳ DRAG TO SPIN · HOVER A COUNTRY
+					{m.fleet_hint()}
 				</p>
 			</div>
 
@@ -322,13 +400,12 @@
 	<section id="platform" class="border-t border-line">
 		<div class="mx-auto max-w-7xl px-6 py-20 sm:py-28">
 			<div use:reveal={{ onView: true }} class="max-w-2xl">
-				<span class="font-mono text-[11px] tracking-wider text-rust">CAPABILITIES</span>
+				<span class="font-mono text-[11px] tracking-wider text-rust">{m.cap_eyebrow()}</span>
 				<h2 class="mt-4 text-3xl leading-tight sm:text-4xl lg:text-5xl">
-					Built for the floor,<br class="hidden sm:block" /> not the demo.
+					{m.cap_title_a()}<br class="hidden sm:block" /> {m.cap_title_b()}
 				</h2>
 				<p class="mt-5 text-pretty text-base leading-relaxed text-steel">
-					Everything you need to run your machines worldwide — live, on every device,
-					with your whole team always on the same page.
+					{m.cap_body()}
 				</p>
 			</div>
 
@@ -336,10 +413,10 @@
 				use:reveal={{ onView: true }}
 				class="mt-14 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-3"
 			>
-				{#each features as feature (feature.tag)}
+				{#each features as feature (feature.id)}
 					{@const Icon = feature.icon}
 					<article
-						id={feature.tag === 'REPORTS' ? 'reports' : undefined}
+						id={feature.id === 'reports' ? 'reports' : undefined}
 						class="group flex scroll-mt-24 flex-col bg-ink p-7 transition-colors hover:bg-ink-2 {feature.wide
 							? 'sm:col-span-2 lg:col-span-1'
 							: ''}"
@@ -354,13 +431,13 @@
 						</div>
 						<h3 class="mt-6 text-xl">{feature.title}</h3>
 						<p class="mt-3 text-sm leading-relaxed text-steel">{feature.body}</p>
-						{#if feature.tag === 'REPORTS'}
+						{#if feature.id === 'reports'}
 							<button
 								onclick={generateSampleReport}
 								class="mt-5 inline-flex w-fit items-center gap-2 border border-rust/40 bg-rust/10 px-4 py-2.5 font-mono text-xs tracking-wide text-rust transition-colors hover:bg-rust hover:text-bone"
 							>
 								<DownloadIcon size={15} stroke={1.5} />
-								DOWNLOAD SAMPLE PDF
+								{m.feat_download_sample()}
 							</button>
 						{/if}
 					</article>
@@ -373,8 +450,8 @@
 	<section id="flow" class="border-t border-line">
 		<div class="mx-auto max-w-7xl px-6 py-16 sm:py-20">
 			<div use:reveal={{ onView: true }} class="mb-10 flex items-baseline justify-between gap-4">
-				<h2 class="text-2xl sm:text-3xl">The lifecycle, end to end</h2>
-				<span class="font-mono text-[11px] tracking-wider text-steel-dim">FIG.01 — MACHINE FLOW</span>
+				<h2 class="text-2xl sm:text-3xl">{m.flow_title()}</h2>
+				<span class="font-mono text-[11px] tracking-wider text-steel-dim">{m.flow_fig()}</span>
 			</div>
 			<FlowLine {stages} />
 		</div>
@@ -384,13 +461,12 @@
 	<section class="border-t border-line">
 		<div class="mx-auto max-w-7xl px-6 py-20 sm:py-28">
 			<div use:reveal={{ onView: true }} class="max-w-2xl">
-				<span class="font-mono text-[11px] tracking-wider text-rust">EVERY MODULE</span>
+				<span class="font-mono text-[11px] tracking-wider text-rust">{m.modules_eyebrow()}</span>
 				<h2 class="mt-4 text-3xl leading-tight sm:text-4xl lg:text-5xl">
-					One platform for the<br class="hidden sm:block" /> whole operation.
+					{m.modules_title_a()}<br class="hidden sm:block" /> {m.modules_title_b()}
 				</h2>
 				<p class="mt-5 text-pretty text-base leading-relaxed text-steel">
-					From the shop floor to the front office — ten connected modules, one source of truth.
-					No spreadsheets, no scattered tools.
+					{m.modules_body()}
 				</p>
 			</div>
 
@@ -416,28 +492,26 @@
 				class="mt-6 grid gap-px border border-line bg-line sm:mt-8 lg:grid-cols-[1fr_1.2fr]"
 			>
 				<div class="bg-ink p-8">
-					<span class="font-mono text-[11px] tracking-wider text-amber">ROLES & ACCESS</span>
-					<h3 class="mt-4 text-2xl leading-tight">Everyone sees exactly what they should.</h3>
+					<span class="font-mono text-[11px] tracking-wider text-amber">{m.roles_eyebrow()}</span>
+					<h3 class="mt-4 text-2xl leading-tight">{m.roles_title()}</h3>
 					<p class="mt-4 text-sm leading-relaxed text-steel">
-						Granular permissions per role, plus per-person data scoping — so a technician, a
-						plant manager and the GM each get their own view. Use the built-in roles or design
-						your own.
+						{m.roles_body()}
 					</p>
 				</div>
 				<div class="flex flex-col justify-center gap-4 bg-ink p-8">
 					<div class="flex flex-wrap gap-2">
-						{#each roles as role (role)}
+						{#each roles as role (role.label)}
 							<span
-								class="border px-3 py-1.5 font-mono text-xs tracking-wide {role.startsWith('+')
+								class="border px-3 py-1.5 font-mono text-xs tracking-wide {role.custom
 									? 'border-rust/40 bg-rust/10 text-rust'
 									: 'border-line-strong text-steel'}"
 							>
-								{role}
+								{role.label}
 							</span>
 						{/each}
 					</div>
 					<div class="mt-2 grid grid-cols-2 gap-px border border-line bg-line font-mono text-[11px] sm:grid-cols-3">
-						{#each ['view dashboard', 'manage machines', 'view statistics', 'manage team', 'manage companies', 'manage settings'] as perm (perm)}
+						{#each perms as perm (perm)}
 							<div class="flex items-center gap-2 bg-ink px-3 py-2 text-steel">
 								<span class="h-1 w-1 bg-rust"></span>{perm}
 							</div>
@@ -452,7 +526,7 @@
 	<section class="border-t border-line">
 		<div class="mx-auto max-w-7xl px-6 py-16 sm:py-20">
 			<div use:reveal={{ onView: true }} class="flex flex-col items-center gap-6">
-				<span class="font-mono text-[11px] tracking-wider text-steel-dim">TRUSTED ON THE FLOOR</span>
+				<span class="font-mono text-[11px] tracking-wider text-steel-dim">{m.proof_eyebrow()}</span>
 				<div
 					class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 font-display text-lg font-semibold tracking-tight text-steel sm:gap-x-12 sm:text-xl"
 				>
@@ -474,34 +548,32 @@
 			>
 				<div class="font-mono text-3xl leading-none text-rust">"</div>
 				<blockquote class="mt-3 text-balance text-xl leading-relaxed sm:text-2xl">
-					We went from chasing status updates across WhatsApp and spreadsheets to one live
-					board the whole company trusts. Nothing slips through anymore.
+					{m.proof_quote()}
 				</blockquote>
 				<figcaption class="mt-7 flex items-center justify-center gap-3 font-mono text-[11px] tracking-wider text-steel">
 					<span class="grid h-8 w-8 place-items-center bg-rust text-bone">MŞ</span>
 					<span class="text-left">
 						<span class="block text-bone">MEHMET ŞAHİN</span>
-						<span class="block text-steel-dim">OPERATIONS DIRECTOR · MERSAN</span>
+						<span class="block text-steel-dim">{m.proof_role()}</span>
 					</span>
 				</figcaption>
 			</figure>
 		</div>
 	</section>
 
-	<!-- CTA — thermal shader echo -->
-	<section id="demo" class="relative isolate scroll-mt-20 overflow-hidden border-t border-line">
+	<!-- CTA — thermal shader echo (stays dark in both themes) -->
+	<section id="demo" class="surface-dark relative isolate scroll-mt-20 overflow-hidden border-t border-line">
 		<ThermalShader class="absolute inset-0 -z-30 h-full w-full" />
 		<div class="pointer-events-none absolute inset-0 -z-10 bg-ink/70"></div>
 		<div class="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-ink via-transparent to-ink"></div>
 
 		<div use:reveal={{ onView: true }} class="mx-auto max-w-3xl px-6 py-24 text-center sm:py-32">
-			<span class="font-mono text-[11px] tracking-wider text-amber">● GET STARTED</span>
+			<span class="font-mono text-[11px] tracking-wider text-amber">● {m.cta_eyebrow()}</span>
 			<h2 class="mt-5 text-balance text-4xl leading-tight sm:text-5xl lg:text-6xl">
-				Put your whole fleet on MechFlow.
+				{m.cta_title()}
 			</h2>
 			<p class="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-bone/70">
-				Book a walkthrough with your machines and your data. We'll have you live in days, not
-				months.
+				{m.cta_body()}
 			</p>
 
 			<form
@@ -511,14 +583,14 @@
 				<input
 					type="email"
 					required
-					placeholder="you@company.com"
+					placeholder={m.cta_email_placeholder()}
 					class="flex-1 bg-ink/80 px-4 py-3.5 font-mono text-sm text-bone placeholder:text-steel-dim focus:outline-none focus:ring-1 focus:ring-rust"
 				/>
 				<button
 					type="submit"
 					class="inline-flex items-center justify-center gap-2 bg-rust px-6 py-3.5 font-mono text-sm tracking-wide text-bone transition-colors hover:bg-rust-bright"
 				>
-					REQUEST ACCESS
+					{m.request_access()}
 					<ArrowRightIcon size={16} stroke={1.5} />
 				</button>
 			</form>
@@ -528,7 +600,7 @@
 				class="mx-auto mt-5 inline-flex items-center gap-2 font-mono text-xs tracking-wide text-steel transition-colors hover:text-bone"
 			>
 				<DownloadIcon size={14} stroke={1.5} />
-				or download a sample report
+				{m.cta_download()}
 			</button>
 		</div>
 	</section>
@@ -545,34 +617,32 @@
 						<span class="font-display text-lg font-semibold tracking-tight">MechFlow</span>
 					</div>
 					<p class="mt-4 max-w-xs text-sm leading-relaxed text-steel">
-						Industrial machine operations — tracked from order to the factory floor, live and
-						worldwide.
+						{m.footer_tagline()}
 					</p>
 				</div>
 
 				<div>
-					<h3 class="font-mono text-[10px] tracking-wider text-steel-dim">PRODUCT</h3>
+					<h3 class="font-mono text-[10px] tracking-wider text-steel-dim">{m.footer_product()}</h3>
 					<ul class="mt-4 space-y-2.5 text-sm text-steel">
-						<li><a class="transition-colors hover:text-bone" href="#platform">Platform</a></li>
-						<li><a class="transition-colors hover:text-bone" href="#flow">Lifecycle</a></li>
-						<li><a class="transition-colors hover:text-bone" href="#reports">Reports</a></li>
+						<li><a class="transition-colors hover:text-bone" href="#platform">{m.footer_link_platform()}</a></li>
+						<li><a class="transition-colors hover:text-bone" href="#flow">{m.footer_link_lifecycle()}</a></li>
+						<li><a class="transition-colors hover:text-bone" href="#reports">{m.footer_link_reports()}</a></li>
 					</ul>
 				</div>
 
 				<div>
-					<h3 class="font-mono text-[10px] tracking-wider text-steel-dim">COMPANY</h3>
+					<h3 class="font-mono text-[10px] tracking-wider text-steel-dim">{m.footer_company()}</h3>
 					<ul class="mt-4 space-y-2.5 text-sm text-steel">
-						<li><a class="transition-colors hover:text-bone" href="#top">About</a></li>
-						<li><a class="transition-colors hover:text-bone" href="#demo">Contact</a></li>
-						<li><a class="transition-colors hover:text-bone" href="#demo">Request access</a></li>
+						<li><a class="transition-colors hover:text-bone" href="#top">{m.footer_link_about()}</a></li>
+						<li><a class="transition-colors hover:text-bone" href="#demo">{m.footer_link_contact()}</a></li>
+						<li><a class="transition-colors hover:text-bone" href="#demo">{m.footer_link_request()}</a></li>
 					</ul>
 				</div>
 
 				<div>
-					<h3 class="font-mono text-[10px] tracking-wider text-steel-dim">LANGUAGE</h3>
-					<div class="mt-4 inline-flex border border-line-strong font-mono text-xs">
-						<span class="bg-bone px-3 py-1.5 text-ink">EN</span>
-						<span class="px-3 py-1.5 text-steel">TR</span>
+					<h3 class="font-mono text-[10px] tracking-wider text-steel-dim">{m.footer_language()}</h3>
+					<div class="mt-4">
+						{@render langSwitch()}
 					</div>
 				</div>
 			</div>
@@ -580,9 +650,10 @@
 			<div
 				class="mt-14 flex flex-col gap-2 border-t border-line pt-6 font-mono text-[11px] tracking-wide text-steel-dim sm:flex-row sm:items-center sm:justify-between"
 			>
-				<span>© 2026 MECHFLOW · ALL RIGHTS RESERVED</span>
-				<span>KEEP YOUR INDUSTRIAL PROCESSES FLOWING.</span>
+				<span>{m.footer_copyright()}</span>
+				<span>{m.footer_motto()}</span>
 			</div>
 		</div>
 	</footer>
 </div>
+{/key}

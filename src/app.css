@@ -36,6 +36,52 @@
 	--radius: 0rem;
 }
 
+/*
+  Light theme — same token names, flipped lightness. Every utility
+  (bg-ink, text-bone, text-steel, …) references these vars at the use
+  site, so overriding them here re-skins the whole page. Accents are
+  nudged darker to keep AA contrast on a near-white surface.
+*/
+:root[data-theme='light'] {
+	--color-ink: oklch(0.98 0.002 286); /* page base — near white */
+	--color-ink-2: oklch(0.96 0.003 286); /* raised surface        */
+	--color-ink-3: oklch(0.925 0.004 286); /* card / line wells     */
+	--color-line: oklch(0 0 0 / 10%);
+	--color-line-strong: oklch(0 0 0 / 18%);
+
+	--color-bone: oklch(0.22 0.006 286); /* foreground text         */
+	--color-steel: oklch(0.45 0.012 286); /* muted text             */
+	--color-steel-dim: oklch(0.58 0.01 286); /* faintest labels      */
+
+	--color-rust: oklch(0.55 0.16 45);
+	--color-rust-bright: oklch(0.6 0.19 48);
+	--color-amber: oklch(0.66 0.15 64);
+	--color-amber-glow: oklch(0.72 0.13 68);
+
+	color-scheme: light;
+}
+
+/*
+  Sections that sit on top of the thermal shader (hero, CTA) stay dark
+  in either theme — they re-pin the full token set to the dark palette,
+  so their contents render light-on-dark regardless of the global mode.
+*/
+.surface-dark {
+	--color-ink: oklch(0.141 0.005 285.823);
+	--color-ink-2: oklch(0.18 0.006 285.9);
+	--color-ink-3: oklch(0.225 0.006 286);
+	--color-line: oklch(1 0 0 / 8%);
+	--color-line-strong: oklch(1 0 0 / 16%);
+	--color-bone: oklch(0.985 0 0);
+	--color-steel: oklch(0.705 0.015 286.067);
+	--color-steel-dim: oklch(0.5 0.012 286);
+	--color-rust: oklch(0.63 0.145 48);
+	--color-rust-bright: oklch(0.705 0.18 52);
+	--color-amber: oklch(0.79 0.16 72);
+	--color-amber-glow: oklch(0.82 0.13 75);
+	color: var(--color-bone);
+}
+
 @layer base {
 	* {
 		border-color: var(--color-line);
@@ -46,11 +92,17 @@
 		color: var(--color-bone);
 		-webkit-font-smoothing: antialiased;
 		scroll-behavior: smooth;
+		transition:
+			background-color 0.3s ease,
+			color 0.3s ease;
 	}
 	body {
 		background-color: var(--color-ink);
 		color: var(--color-bone);
 		overflow-x: hidden;
+		transition:
+			background-color 0.3s ease,
+			color 0.3s ease;
 	}
 	::selection {
 		background: var(--color-rust);
