@@ -86,13 +86,6 @@
 		}
 	];
 
-	const telemetry = [
-		['FLEET', '1,284 units'],
-		['IN TRANSIT', '37'],
-		['ON SITE', '11 countries'],
-		['UPTIME', '99.98%']
-	];
-
 	// The full platform surface — one card per real app module.
 	const modules = [
 		{ icon: DashboardIcon, title: 'Dashboard', body: 'Your whole operation at a glance.' },
@@ -287,19 +280,7 @@
 				</a>
 			</div>
 
-			<dl
-				use:reveal={{ delay: 0.38 }}
-				class="mt-16 grid max-w-3xl grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4"
-			>
-				{#each telemetry as [label, value] (label)}
-					<div class="bg-ink/70 px-4 py-4 backdrop-blur-sm">
-						<dt class="font-mono text-[10px] tracking-wider text-steel-dim">{label}</dt>
-						<dd class="mt-1 font-display text-lg font-medium text-bone">{value}</dd>
-					</div>
-				{/each}
-			</dl>
 		</div>
-
 	</section>
 
 	<!-- global footprint -->
